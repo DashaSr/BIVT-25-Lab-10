@@ -1,61 +1,171 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+namespace Lab9.Blue;
 
-namespace Lab9.Blue
+public class Task2 : Blue
 {
-    public class Task2 : Blue
+    private string sequence;
+    private string output;
+
+    public string Output
     {
-        private string _output = "";
-        public string Output => _output;
-        private string _combo;
-        public Task2(string input, string combo) : base(input)
+        get
         {
-            _combo = combo;
+            return output;
         }
-        public override void Review()
+        private set
         {
+            output = value;
+        }
+    }
 
-            string[] words = _input.Split(new char[] { ' ' }, StringSplitOptions.None);
+    public Task2(string text, string sequenceToRemove) : base(text)
+    {
+        sequence = sequenceToRemove;
+        Output = "";
+        Review();
+    }
 
-            foreach (string word in words)
+    private bool IsWordChar(char c)
+    {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+               (c >= 'А' && c <= 'Я') || (c >= 'а' && c <= 'я') ||
+               c == 'ё' || c == 'Ё' || c == '-' || c == '\'';
+    }
+
+    private bool IsSpace(char c)
+    {
+        return c == ' ';
+    }
+
+    private bool IsPunctuation(char c)
+    {
+        return c == '.' || c == ',' || c == '!' || c == '?' || c == ':' || c == ';';
+    }
+
+    private bool WordHasSequence(string word, string pattern)
+    {
+        if (pattern.Length == 0)
+        {
+            return true;
+        }
+
+        if (word.Length < pattern.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i <= word.Length - pattern.Length; i++)
+        {
+            bool match = true;
+            for (int j = 0; j < pattern.Length; j++)
             {
-                if (!word.Contains(_combo))
+                if (word[i + j] != pattern[j])
                 {
-                    if (_output.Length == 0)
-                    {
-                        _output = word;
-                    }
-                    else _output += ' ' + word;
+                    match = false;
+                    break;
                 }
-                else
+            }
+
+            if (match)
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    public override void Review()
+    {
+        string inputText = Input;
+        
+        if (inputText == null || inputText.Length == 0 || sequence.Length == 0)
+        {
+            Output = inputText;
+            return;
+        }
+
+        char[] buffer = new char[inputText.Length * 2];
+        int bufferIndex = 0;
+        int pos = 0;
+
+        while (pos < inputText.Length)
+        {
+            while (pos < inputText.Length && !IsWordChar(inputText[pos]))
+            {
+                buffer[bufferIndex++] = inputText[pos];
+                pos++;
+            }
+
+            if (pos >= inputText.Length)
+            {
+                break;
+            }
+
+            int wordStart = pos;
+            while (pos < inputText.Length && IsWordChar(inputText[pos]))
+            {
+                pos++;
+            }
+            int wordLength = pos - wordStart;
+
+            char[] wordArray = new char[wordLength];
+            for (int k = 0; k < wordLength; k++)
+            {
+                wordArray[k] = inputText[wordStart + k];
+            }
+            string currentWord = new string(wordArray);
+
+            if (!WordHasSequence(currentWord, sequence))
+            {
+                for (int k = 0; k < wordLength; k++)
                 {
-
-                    char[] punctuationMarks = { '.', ',', '!', '?', ';', ':' };
-                    if (word.Contains('\"'))
-                    {
-                        if (word.Any(c => punctuationMarks.Contains(c)))
-                        {
-                            _output += " \"\"" + word[^1];
-                        }
-                        else if (_output.Length == 0)
-                            _output = "\"\"";
-                        else
-                            _output += " \"\"";
-                    }
-                    else if (word.Any(c => punctuationMarks.Contains(c)))
-                    {
-                        _output += word[^1];
-                    }
-
+                    buffer[bufferIndex++] = wordArray[k];
                 }
             }
         }
-        public override string ToString()
+        
+        char[] clean = new char[bufferIndex];
+        int cleanIndex = 0;
+        bool prevIsSpace = true;
+
+        for (int i = 0; i < bufferIndex; i++)
         {
-            return _output;
+            char ch = buffer[i];
+            if (IsSpace(ch))
+            {
+                if (!prevIsSpace)
+                {
+                    clean[cleanIndex++] = ' ';
+                    prevIsSpace = true;
+                }
+            }
+            else
+            {
+                clean[cleanIndex++] = ch;
+                prevIsSpace = false;
+            }
         }
+
+        if (cleanIndex > 0 && clean[cleanIndex - 1] == ' ')
+        {
+            cleanIndex--;
+        }
+
+        char[] final = new char[cleanIndex];
+        int finalIndex = 0;
+        for (int i = 0; i < cleanIndex; i++)
+        {
+            if (!(clean[i] == ' ' && i + 1 < cleanIndex && IsPunctuation(clean[i + 1])))
+            {
+                final[finalIndex++] = clean[i];
+            }
+        }
+
+        Output = new string(final, 0, finalIndex);
+    }
+
+    public override string ToString()
+    {
+        return Output;
     }
 }
