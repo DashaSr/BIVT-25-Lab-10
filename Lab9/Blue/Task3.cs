@@ -1,108 +1,136 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Lab9.Blue
 {
     public class Task3 : Blue
     {
-        private (char, double)[] _output = new (char, double)[0];
-        public (char, double)[] Output => _output;
-        private char[] _c;
-
         public Task3(string input) : base(input)
         {
-
         }
+        private (char, double)[] output;
+        public (char, double)[] Output
+        {
+            get
+            {
+                return output;
+            }
+            private set
+            {
+                output = value;
+            }
+        }
+        private bool IsWordChar(char c)
+        {
+            return char.IsLetter(c) || c == '-'  || c == '\'';
+        }
+
+        private bool IsWordStart(string text, int index)
+        {
+            if (!IsWordChar(text[index]))
+            {
+                return false;
+            }
+
+            if (index == 0)
+            {
+                return true;
+            }
+
+            if (char.IsDigit(text[index - 1]))
+            {
+                return false;
+            }
+            
+            return !IsWordChar(text[index - 1]);
+        }
+
         public override void Review()
         {
-            string[] words = _input.Split(new char[] { ' ' }, StringSplitOptions.None);
-            char[] c = new char[0];
-            char[] punctuation = new char[] { '.', ',', '!', '?', ';', ':', '"', '\'', '(', ')', '[', ']', '{', '}', '-', '—', '…', '«', '»' };
-            string[] words2 = new string[words.Length];
-
-            for (int i = 0; i < words.Length; i++)
+            if (Input == null)
             {
-                words2[i] = words[i].Trim(punctuation);
+                Output = null;
+                return;
             }
-            foreach (var word in words2)
+            
+            int wordCount = 0;
+            for (int i = 0; i < Input.Length; i++)
             {
-                if (word.Length > 0 && char.IsLetter(word[0]))
-                {
-                    Array.Resize(ref c, c.Length + 1);
-                    c[^1] = char.ToLower(word[0]);
-                }
-                else if (word.Length > 1 && char.IsLetter(word[1]) && !char.IsLetter(word[0]))
-                {
-                    Array.Resize(ref c, c.Length + 1);
-                    c[^1] = char.ToLower(word[1]);
-                }
-
-
+                if (IsWordStart(Input, i)) wordCount++;
+                
             }
-            char[] uniqch = c.Distinct().ToArray();
-            _output = new (char, double)[uniqch.Length];
-            double countWords = 0;
-            foreach (var word in words2)
+            
+            char[] firstLetters = new char[wordCount];
+            int index = 0;
+            for (int i = 0; i < Input.Length; i++)
             {
-                if (word.Length > 0 && char.IsLetter(word[0]))
+                if (IsWordStart(Input, i))
                 {
-
-                    countWords++;
-
+                    char c = char.ToLower(Input[i]);
+                    firstLetters[index++] = c;
                 }
             }
 
-            for (int i = 0; i < uniqch.Length; i++)
+            char[] uniqueLetters = firstLetters.Distinct().ToArray();
+
+            int[] counts = new int[uniqueLetters.Length];
+            for (int i = 0; i < uniqueLetters.Length; i++)
             {
-                double count = 0;
-
-
-                foreach (var word in words2)
+                for (int j = 0; j < firstLetters.Length; j++)
                 {
-                    if (word.Length > 0 && char.IsLetter(word[0]))
+                    if (uniqueLetters[i] == firstLetters[j])
+                        counts[i]++;
+                }
+            }
+            
+            Output = new (char, double)[uniqueLetters.Length];
+            for (int i = 0; i < uniqueLetters.Length; i++)
+            {
+                double percent = counts[i] * 100.0 / firstLetters.Length;
+                Output[i] = (uniqueLetters[i], percent);
+            }
+
+            for (int i = 0; i < Output.Length - 1; i++)
+            {
+                for (int j = 0; j < Output.Length - 1 - i; j++)
+                {
+                    bool needSwap = false;
+                    if (Output[j].Item2 < Output[j + 1].Item2)
                     {
-                        if (uniqch[i] == char.ToLower(word[0]))
+                        needSwap = true;
+                    }
+                    else if (Output[j].Item2 == Output[j + 1].Item2)
+                    {
+                        if (Output[j].Item1 > Output[j + 1].Item1)
                         {
-                            count++;
+                            needSwap = true;
                         }
                     }
-                    else if (word.Length > 1 && char.IsLetter(word[1]) && !char.IsLetter(word[0]))
-                    {
-                        if (uniqch[i] == char.ToLower(word[1]))
-                        {
-                            count++;
-                        }
-                    }
 
+                    if (needSwap)
+                    {
+                        (Output[j], Output[j + 1]) = (Output[j + 1], Output[j]);
+                    }
                 }
-                _output[i] = (uniqch[i], (count / countWords) * 100);
-            }
-
-            for (int i = 0; i < _output.Length - 1; i++)
-            {
-
-                for (int j = 0; j < _output.Length - i - 1; j++)
-                    if (_output[j].Item2 < _output[j + 1].Item2)
-                        (_output[j], _output[j + 1]) = (_output[j + 1], _output[j]);
-            }
-
-            for (int i = 0; i < _output.Length - 1; i++)
-            {
-
-                for (int j = 0; j < _output.Length - i - 1; j++)
-                    if (Math.Abs(_output[j].Item2 - _output[j + 1].Item2) < 0.0001)
-                    {
-                        if (_output[j].Item1 > _output[j + 1].Item1)
-                            (_output[j], _output[j + 1]) = (_output[j + 1], _output[j]);
-                    }
             }
         }
+        
         public override string ToString()
         {
-            return string.Join(Environment.NewLine, _output.Select(tuple => $"{tuple.Item1}:{tuple.Item2:F4}"));
+            if (Output == null || Output.Length == 0)
+            {
+                return "";
+            }
+
+            string result = "";
+            for (int i = 0; i < Output.Length; i++)
+            {
+                result += Output[i].Item1;
+                result += ":";
+                result += Output[i].Item2.ToString("F4");
+                if (i < Output.Length - 1)
+                {
+                    result += "\n";
+                }
+            }
+            return result;
         }
     }
 }
